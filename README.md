@@ -1,5 +1,8 @@
 # html-to-pptx
 
+[![CI](https://github.com/yuna78/html-to-pptx/actions/workflows/ci.yml/badge.svg)](https://github.com/yuna78/html-to-pptx/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+
 **Turn an HTML deck into a PowerPoint file you can actually edit.**
 **把 HTML 幻灯片转成真正可以编辑的 PowerPoint。**
 
