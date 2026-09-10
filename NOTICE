@@ -1,0 +1,25 @@
+html-to-pptx
+Copyright (c) 2026 html-to-pptx contributors
+Licensed under the MIT License (see LICENSE).
+
+This product bundles the following third-party components.
+
+1. html2pptx  —  engine/
+   Upstream: https://github.com/GX-Alex/html2pptx
+   License:  MIT (full text in engine/LICENSE)
+   Notes:    vendored fork; local changes are listed in engine/UPSTREAM.md.
+
+2. Apache ECharts  —  vendor/echarts.min.js
+   Upstream: https://github.com/apache/echarts
+   License:  Apache License 2.0 (header retained in the bundled file)
+   Notes:    shipped so charts still render while the converter runs with no
+             network access.
+
+3. Font Awesome Free (icon path data)  —  engine/fontawesome_subset.py
+   Upstream: https://fontawesome.com/
+   License:  CC BY 4.0 for icons (https://fontawesome.com/license/free)
+   Notes:    a small subset of solid-icon path data, inlined so decks that use
+             Font Awesome classes still show their icons offline.
+
+Runtime dependencies installed from PyPI (not bundled): python-pptx (MIT),
+beautifulsoup4 (MIT).

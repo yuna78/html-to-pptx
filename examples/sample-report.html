@@ -1,0 +1,40 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Sample scrolling report</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<style>body{font-family:Arial;margin:0}.container{max-width:1100px;margin:0 auto;padding:24px}
+.section{margin:30px 0}h2{font-size:28px}td,th{border:1px solid #ccc;padding:6px 10px;font-size:16px}
+table{border-collapse:collapse}</style></head><body>
+<div class="container">
+  <div class="header"><h1>Quarterly review</h1><p>A scrolling report — the converter paginates it automatically.</p></div>
+  <div class="chart-row"><div id="c1" style="width:900px;height:380px"></div></div>
+  <div class="section"><h2>Details</h2>
+  <table><thead><tr><th>Item</th><th>Note</th></tr></thead><tbody>
+<tr><td>Row 1</td><td>Note 1</td></tr>
+<tr><td>Row 2</td><td>Note 2</td></tr>
+<tr><td>Row 3</td><td>Note 3</td></tr>
+<tr><td>Row 4</td><td>Note 4</td></tr>
+<tr><td>Row 5</td><td>Note 5</td></tr>
+<tr><td>Row 6</td><td>Note 6</td></tr>
+<tr><td>Row 7</td><td>Note 7</td></tr>
+<tr><td>Row 8</td><td>Note 8</td></tr>
+<tr><td>Row 9</td><td>Note 9</td></tr>
+<tr><td>Row 10</td><td>Note 10</td></tr>
+<tr><td>Row 11</td><td>Note 11</td></tr>
+<tr><td>Row 12</td><td>Note 12</td></tr>
+<tr><td>Row 13</td><td>Note 13</td></tr>
+<tr><td>Row 14</td><td>Note 14</td></tr>
+<tr><td>Row 15</td><td>Note 15</td></tr>
+<tr><td>Row 16</td><td>Note 16</td></tr>
+<tr><td>Row 17</td><td>Note 17</td></tr>
+<tr><td>Row 18</td><td>Note 18</td></tr>
+<tr><td>Row 19</td><td>Note 19</td></tr>
+<tr><td>Row 20</td><td>Note 20</td></tr>
+<tr><td>Row 21</td><td>Note 21</td></tr>
+<tr><td>Row 22</td><td>Note 22</td></tr>
+<tr><td>Row 23</td><td>Note 23</td></tr>
+<tr><td>Row 24</td><td>Note 24</td></tr>
+<tr><td>Row 25</td><td>Note 25</td></tr>
+  </tbody></table></div>
+  <div class="footer">footer line</div>
+</div>
+<script>var ch=echarts.init(document.getElementById('c1'));ch.setOption({xAxis:{type:'category',data:['A','B','C']},yAxis:{type:'value'},series:[{type:'bar',data:[10,20,30],itemStyle:{color:'#2e86de'}}]});</script>
+</body></html>

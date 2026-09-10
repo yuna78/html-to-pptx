@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# One-command entry point: bootstraps the venv on first run, then converts.
+#
+#   bin/html-to-pptx report.html                 # → report.pptx, next to the input
+#   bin/html-to-pptx report.html -o deck.pptx
+#   bin/html-to-pptx --doctor                    # check prerequisites
+set -euo pipefail
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VENV="$DIR/.venv"
+
+if [ ! -x "$VENV/bin/python" ] || ! "$VENV/bin/python" -c "import pptx, bs4" >/dev/null 2>&1; then
+  echo "[html-to-pptx] first run: setting up the Python environment…" >&2
+  bash "$DIR/setup.sh" >&2
+fi
+
+exec "$VENV/bin/python" "$DIR/convert.py" "$@"

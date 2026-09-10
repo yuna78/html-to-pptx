@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.prepared.html
+.html2pptx-prepared-*.html
+.DS_Store
