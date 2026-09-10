@@ -24,7 +24,7 @@ SKILL_DIR = Path(__file__).resolve().parent
 ENGINE_CLI = SKILL_DIR / "engine" / "html2pptx.py"
 SETUP_SH = SKILL_DIR / "setup.sh"
 
-MIN_NODE_MAJOR = 18
+MIN_NODE_MAJOR = 22  # the CDP client needs Node's global WebSocket
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ def _node() -> tuple[bool, str]:
     node = shutil.which("node")
     if not node:
         return False, (
-            "Node.js not found (the DOM extractor runs on it).\n"
+            "Node.js not found (the DOM extractor runs on it; v22+ required).\n"
             "    macOS:  brew install node\n"
             "    Ubuntu: sudo apt install nodejs\n"
             "    or:     https://nodejs.org/"
@@ -63,7 +63,12 @@ def _node() -> tuple[bool, str]:
     except (subprocess.SubprocessError, ValueError):
         return True, f"node at {node} (version unknown)"
     if major < MIN_NODE_MAJOR:
-        return False, f"Node.js {version} is too old — v{MIN_NODE_MAJOR}+ required ({node})"
+        return False, (
+            f"Node.js {version} is too old — v{MIN_NODE_MAJOR}+ required (global WebSocket).\n"
+            f"    found at: {node}\n"
+            "    macOS:  brew install node\n"
+            "    Ubuntu: https://github.com/nodesource/distributions"
+        )
     return True, f"node {version}"
 
 

@@ -751,6 +751,16 @@ function sane(dim) {
 }
 
 async function main() {
+  // [fork patch] The CDP client below uses the global WebSocket, which Node only exposes
+  // from v22 on. Fail with the reason instead of a bare ReferenceError deep in the run.
+  if (typeof WebSocket === "undefined") {
+    console.error(
+      `Node ${process.versions.node} has no global WebSocket — Node.js 22 or newer is required.\n` +
+      "  macOS:  brew install node\n" +
+      "  Ubuntu: https://github.com/nodesource/distributions"
+    );
+    process.exit(2);
+  }
   const argv = process.argv.slice(2);
   const positional = [];
   let canvasArg = "auto";

@@ -62,7 +62,7 @@ separate setup step, and nothing is installed system-wide.
 
 | Requirement | Why it is needed | Install |
 |---|---|---|
-| **Node.js ≥ 18** | runs the DOM→SVG extractor (uses only Node built-ins, no `npm install`) | `brew install node` · `apt install nodejs` |
+| **Node.js ≥ 22** | runs the DOM→SVG extractor (uses only Node built-ins, no `npm install`) | `brew install node` · `apt install nodejs` |
 | **Google Chrome or Chromium** | used headlessly as the layout engine | [google.com/chrome](https://www.google.com/chrome/) · `apt install chromium-browser` |
 | **Python ≥ 3.11** | `python-pptx` + `beautifulsoup4`, installed into a local venv on first run | preinstalled on macOS; `apt install python3-venv` |
 | **CJK fonts** (Chinese/Japanese/Korean decks) | text and chart labels | preinstalled on macOS; `apt install fonts-noto-cjk` |
@@ -167,7 +167,7 @@ The full explanation, with the exact rule that causes each case, is in
 
 | Symptom | What to do |
 |---|---|
-| `node: command not found` | install Node.js ≥ 18 |
+| `node: command not found` / `no global WebSocket` | install Node.js ≥ 22 |
 | Chrome not found | install Chrome/Chromium, or pass `--chrome <path>` |
 | `ModuleNotFoundError: pptx` / `bs4` | use `bin/html-to-pptx` (it builds the venv), or run `bash setup.sh` |
 | Only one slide in the output | no page structure was recognised; check the page class names above |

@@ -42,7 +42,7 @@ bar/line/label is a native PowerPoint shape. Nothing is rasterised into a page i
 
 | Needed | Why | If missing |
 |---|---|---|
-| **Node.js** ≥ 18 | runs the DOM→SVG extractor (no npm install needed) | `node: command not found` |
+| **Node.js** ≥ 22 | runs the DOM→SVG extractor (no npm install needed) | `node: command not found` |
 | **Google Chrome / Chromium** | headless layout engine, auto-discovered | conversion fails / Chrome not found |
 | **Python** ≥ 3.11 + this skill's `.venv` | python-pptx + beautifulsoup4, created on first run | `ModuleNotFoundError` |
 | **CJK fonts** (for Chinese decks) | text and chart labels | boxes instead of glyphs (rare on macOS) |
