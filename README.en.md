@@ -5,13 +5,14 @@
   Every word, table cell and chart bar is a native PowerPoint shape — not a screenshot.
 </p>
 
+<p align="center"><a href="./README.md">简体中文</a> · <strong>English</strong></p>
+
 <p align="center">
   <a href="https://github.com/yuna78/html-to-pptx/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/yuna78/html-to-pptx/ci.yml?branch=main&style=flat-square&label=CI&labelColor=1f2937"></a>
   <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-3b82f6?style=flat-square&labelColor=1f2937"></a>
-  <img alt="Python" src="https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white&labelColor=1f2937">
-  <img alt="Node" src="https://img.shields.io/badge/Node-22+-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white&labelColor=1f2937">
-  <img alt="Platform" src="https://img.shields.io/badge/macOS%20|%20Linux-supported-6b7280?style=flat-square&labelColor=1f2937">
-  <a href="./README.md"><img alt="中文" src="https://img.shields.io/badge/文档-中文-64748b?style=flat-square&labelColor=1f2937"></a>
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white&labelColor=1f2937">
+  <img alt="Node" src="https://img.shields.io/badge/Node-22%2B-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white&labelColor=1f2937">
+  <img alt="Platform" src="https://img.shields.io/badge/macOS%20%7C%20Linux-supported-6b7280?style=flat-square&labelColor=1f2937">
 </p>
 
 <p align="center"><img src="./examples/figure-editable.png" alt="HTML input next to the converted PPTX, with every editable native shape outlined" width="860"></p>
@@ -21,6 +22,13 @@ bin/html-to-pptx report.html      # report.pptx lands right next to report.html
 ```
 
 ---
+
+> **It is a general-purpose command-line tool first**, an agent skill second.
+> Run it in a terminal, put it in a Makefile, wire it into CI, call it from any script — no
+> Claude, no account, no network required. It is also a **portable agent skill**: `SKILL.md`
+> in the repo root is a standard skill description, so Claude Code / Claude Desktop pick it up
+> when cloned into the skills directory, and Cursor, Codex or any agent that can shell out can
+> register the executable in `bin/` as a tool.
 
 ## Why this exists
 
@@ -146,6 +154,35 @@ editable. A handful of HTML shapes lose content during that walk (multi-line tab
 pseudo elements) and `prepare.py` rewrites them first. The exact rule behind each case is
 in [`docs/how-it-works.en.md`](./docs/how-it-works.en.md).
 
+## Relationship to `GX-Alex/html2pptx`
+
+**The hard part is upstream's.** Walking a rendered DOM and rebuilding it as native
+DrawingML — the reason the output is editable at all — is the design and code of
+[`GX-Alex/html2pptx`](https://github.com/GX-Alex/html2pptx) (MIT). This project is a
+vendored fork of it: `engine/` *is* that code, plus the repairs and packaging that real
+Chinese-language reports forced on us.
+
+Differences from upstream as of the fork point:
+
+| | Upstream (at fork) | This project |
+|---|---|---|
+| **Canvas size** | hard-coded 1280×720; any other deck size produced zero slides | measured from the first page, any size, `--canvas` to override |
+| **Text fidelity** | re-tokenised on wrap and re-joined with a spacing heuristic: `18,420` → `18, 420`, `−3.2%` → `− 3.2%` | original whitespace preserved; breaks only at whitespace or between CJK characters, with a regression test |
+| **Chart fills** | charts coloured via CSS classes/variables turned black once `<style>` was stripped | computed paint baked onto the elements before stripping |
+| **Chrome fails to start** | `stdio: ignore`, one bare timeout message | Chrome's own stderr echoed, early exit detected, one automatic `--no-sandbox` retry |
+| **Node version** | `ReferenceError` mid-run on older Node | checked up front, with the version found and how to upgrade |
+| **Network during render** | normal networking | zero-egress: every hostname fails to resolve |
+| **Three content-losing HTML shapes** | multi-line cells collapse, `<b>` inside a `<div>` disappears, `<br>` lines glue together | reshaped by `prepare.py`, with table CSS carried across so column widths hold |
+| **Long scrolling reports** | no pagination | paginated on block boundaries; long tables split by rows with the header repeated |
+| **Gradients / pseudo elements / controls** | gradient blocks vanish, `::before` decorations lost, filters export every option | gradients flattened, pseudo elements materialised, controls collapsed to the selected value |
+| **Dependency diagnostics** | none | `--doctor` checks each prerequisite and prints the fix |
+| **Tests / CI** | — | 14 tests plus GitHub Actions running real Chrome |
+
+`prepare.py`, `convert.py`, `bin/`, `tests/`, `examples/` and the documentation are this
+project's own. Every change inside `engine/` carries a `[fork patch]` comment and is listed
+in [`engine/UPSTREAM.md`](./engine/UPSTREAM.md) so the fork can be rebased later. If you
+want the bare engine and don't work with CJK reports, use upstream directly.
+
 ## Limitations
 
 - **Text is positioned per element.** A paragraph wrapping over several lines becomes one
@@ -198,8 +235,9 @@ Contributions welcome — see [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## Credits and licence
 
-- Conversion engine: [`GX-Alex/html2pptx`](https://github.com/GX-Alex/html2pptx) (MIT),
-  vendored with local patches documented in [`engine/UPSTREAM.md`](./engine/UPSTREAM.md).
+- Conversion engine: [`GX-Alex/html2pptx`](https://github.com/GX-Alex/html2pptx) (MIT) —
+  the core DOM → editable primitives → DrawingML work is upstream's; this is a vendored
+  fork, see [Relationship to upstream](#relationship-to-gx-alexhtml2pptx) above.
 - [Apache ECharts](https://echarts.apache.org/) (Apache-2.0) · [Font Awesome Free](https://fontawesome.com/license/free) (CC BY 4.0)
   · [python-pptx](https://python-pptx.readthedocs.io/) (MIT) · [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/) (MIT)
 

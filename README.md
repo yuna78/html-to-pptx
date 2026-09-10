@@ -5,13 +5,14 @@
   每个字、每格表、每根柱子都是 PPT 原生形状，不是一张截图。
 </p>
 
+<p align="center"><strong>简体中文</strong> · <a href="./README.en.md">English</a></p>
+
 <p align="center">
   <a href="https://github.com/yuna78/html-to-pptx/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/yuna78/html-to-pptx/ci.yml?branch=main&style=flat-square&label=CI&labelColor=1f2937"></a>
   <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-3b82f6?style=flat-square&labelColor=1f2937"></a>
-  <img alt="Python" src="https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white&labelColor=1f2937">
-  <img alt="Node" src="https://img.shields.io/badge/Node-22+-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white&labelColor=1f2937">
-  <img alt="Platform" src="https://img.shields.io/badge/macOS%20|%20Linux-supported-6b7280?style=flat-square&labelColor=1f2937">
-  <a href="./README.en.md"><img alt="English" src="https://img.shields.io/badge/docs-English-64748b?style=flat-square&labelColor=1f2937"></a>
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white&labelColor=1f2937">
+  <img alt="Node" src="https://img.shields.io/badge/Node-22%2B-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white&labelColor=1f2937">
+  <img alt="Platform" src="https://img.shields.io/badge/macOS%20%7C%20Linux-supported-6b7280?style=flat-square&labelColor=1f2937">
 </p>
 
 <p align="center"><img src="./examples/figure-editable.png" alt="HTML 输入与 PPTX 输出对照：蓝框标出每一个可编辑的原生形状" width="860"></p>
@@ -21,6 +22,12 @@ bin/html-to-pptx report.html      # 产物 report.pptx 就在 report.html 旁边
 ```
 
 ---
+
+> **它首先是一个通用命令行工具**，其次才是 agent skill。
+> 终端里直接跑、写进 Makefile、放进 CI、被任何脚本调用都可以，不需要 Claude、不需要账号、不联网。
+> 同时它也是一个**通用 agent skill**：仓库根目录的 `SKILL.md` 是标准的 skill 描述文件，
+> Claude Code / Claude Desktop clone 到 skills 目录即可；Cursor、Codex、以及任何能调外部命令的
+> agent，把 `bin/` 下的可执行文件当工具注册进去就能用。
 
 ## 为什么要有它
 
@@ -136,6 +143,33 @@ flowchart LR
 `<div>` 里的 `<b>`、`<br>` 换行、CSS 计数器序号、渐变、伪元素），`prepare.py` 会先把它们改掉。
 每种情况对应引擎里的哪条规则，见 [`docs/how-it-works.md`](./docs/how-it-works.md)。
 
+## 与上游 `GX-Alex/html2pptx` 的关系
+
+**最难的那部分是上游做的。** 遍历渲染后的 DOM、重建成原生 DrawingML——产物之所以「可编辑」，
+靠的是 [`GX-Alex/html2pptx`](https://github.com/GX-Alex/html2pptx)（MIT）的设计与实现。
+本项目是它的 vendored fork，`engine/` 就是那份代码，加上我们在真实中文报告上踩坑后补的修复与封装。
+
+本项目相对 fork 时那版上游的差异：
+
+| | 上游（fork 时） | 本项目 |
+|---|---|---|
+| **画布尺寸** | 写死 1280×720，其它尺寸的 deck 出 0 页 | 转换前实测首页，支持任意尺寸，可 `--canvas` 覆盖 |
+| **文字保真** | 换行时重新分词再按启发式补空格：`18,420` → `18, 420`、`−3.2%` → `− 3.2%` | 保留原始空白，换行只落在空白或 CJK 字之间；有回归测试 |
+| **图表填色** | 剥离 `<style>` 后，靠 CSS 类/变量上色的图表退化成黑色 | 渲染前把 computed paint 烘焙到元素上 |
+| **Chrome 启动失败** | `stdio: ignore`，只报一句 timeout | 回显 Chrome 自己的 stderr，提前退出即止，并自动用 `--no-sandbox` 重试一次 |
+| **Node 版本** | 老版本 Node 上跑到一半 `ReferenceError` | 启动前检查全局 WebSocket，直接给出版本与升级指引 |
+| **渲染期网络** | 正常联网 | 零出网（所有域名解析失败），页面无法回传或外泄 |
+| **内容丢失的三种 HTML 形状** | 多行单元格并成一段、`<div>` 里的 `<b>` 消失、`<br>` 黏成一行 | `prepare.py` 先重整，并把表格 CSS 一起迁移，列宽不走形 |
+| **滚动式长报告** | 无分页概念 | 按语义块自动分页，超长表格按行拆页并重复表头 |
+| **渐变 / 伪元素 / 交互控件** | 渐变整块消失、`::before` 装饰丢失、筛选器把所有选项都导出 | 渐变拍平、伪元素物化、控件压成当前选中值 |
+| **依赖诊断** | 无 | `--doctor` 逐项自检并给出安装命令 |
+| **测试 / CI** | — | 14 个用例 + GitHub Actions 在真实 Chrome 上跑 |
+
+`prepare.py`、`convert.py`、`bin/`、`tests/`、`examples/` 与全部文档是本项目自己的东西；
+`engine/` 里的每处改动都用 `[fork patch]` 注释标记，逐条记在
+[`engine/UPSTREAM.md`](./engine/UPSTREAM.md)，方便日后 rebase 上游。
+如果你只需要纯引擎、且不做中文报告，直接用上游更合适。
+
 ## 已知限制
 
 - **文字按元素整体定位**：一段跨多行折行的正文会被当成一个文本形状放在元素框的位置，
@@ -184,8 +218,9 @@ bash setup.sh                                   # 建 venv + 依赖自检
 
 ## 致谢与许可
 
-- 转换引擎：[`GX-Alex/html2pptx`](https://github.com/GX-Alex/html2pptx)（MIT），
-  vendored fork，本地补丁列在 [`engine/UPSTREAM.md`](./engine/UPSTREAM.md)。
+- 转换引擎：[`GX-Alex/html2pptx`](https://github.com/GX-Alex/html2pptx)（MIT）——
+  核心的「DOM → 可编辑图元 → DrawingML」是上游的工作，本项目是它的 vendored fork，
+  差异见上文[「与上游的关系」](#与上游-gx-alexhtml2pptx-的关系)。
 - [Apache ECharts](https://echarts.apache.org/)（Apache-2.0）· [Font Awesome Free](https://fontawesome.com/license/free)（CC BY 4.0）
   · [python-pptx](https://python-pptx.readthedocs.io/)（MIT）· [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/)（MIT）
 
