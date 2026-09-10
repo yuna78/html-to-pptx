@@ -127,7 +127,8 @@ class Cdp {
   }
 }
 
-async function launchChrome(profileDir) {
+async function launchChrome(profileDir, options = {}) {
+  const noSandbox = options.noSandbox === true || process.env.CHROME_NO_SANDBOX === "1";
   if (!CHROME) {
     throw new Error(
       "Chrome/Chromium executable not found. Install Chrome/Chromium or pass --chrome/--chrome-path to html2pptx.py."
@@ -156,12 +157,27 @@ async function launchChrome(profileDir) {
     "--disable-extensions",
     "--disable-plugins",
     "--disable-dev-shm-usage", // container /dev/shm is often too small; avoids renderer crashes
-    // needed to run Chromium as root in a container; leave unset for normal desktop use
-    ...(process.env.CHROME_NO_SANDBOX === "1" ? ["--no-sandbox"] : []),
+    // [fork patch] needed wherever the Chrome sandbox cannot start: as root in a
+    // container, or on hosts that block unprivileged user namespaces (Ubuntu 24.04+,
+    // GitHub Actions runners). Set CHROME_NO_SANDBOX=1, or let the automatic retry
+    // below turn it on after the first launch fails.
+    ...(noSandbox ? ["--no-sandbox"] : []),
     `--window-size=${CANVAS_W},${CANVAS_H}`,
     "about:blank",
   ];
-  const proc = spawn(CHROME, args, { stdio: "ignore" });
+  // [fork patch] keep Chrome's stderr: when the browser refuses to start, its own
+  // message ("Failed to move to new namespace", a missing shared library, …) is the
+  // only thing that explains why.
+  const proc = spawn(CHROME, args, { stdio: ["ignore", "ignore", "pipe"] });
+  let stderr = "";
+  let exited = null;
+  proc.stderr.on("data", (chunk) => {
+    stderr = (stderr + chunk.toString()).slice(-4000);
+  });
+  proc.on("exit", (code, signal) => {
+    exited = signal ? `signal ${signal}` : `exit code ${code}`;
+  });
+
   for (let i = 0; i < 80; i += 1) {
     try {
       const targets = await fetchJson(`http://127.0.0.1:${port}/json`);
@@ -170,10 +186,30 @@ async function launchChrome(profileDir) {
     } catch {
       await wait(250);
     }
+    if (exited) break;   // no point waiting out the timeout on a browser that already quit
     await wait(250);
   }
   proc.kill("SIGTERM");
-  throw new Error("Timed out waiting for Chrome remote debugging");
+
+  // The most common Linux/CI failure is a sandbox that cannot start. Retry once without it.
+  if (!noSandbox) {
+    const hint = (stderr + " " + (exited || "")).toLowerCase();
+    const sandboxProblem =
+      hint.includes("namespace") || hint.includes("sandbox") || hint.includes("suid") ||
+      exited !== null || process.platform === "linux";
+    if (sandboxProblem) {
+      console.error("[html2pptx] Chrome did not start; retrying with --no-sandbox.");
+      rmrf(profileDir);
+      return launchChrome(profileDir, { noSandbox: true });
+    }
+  }
+
+  const detail = [
+    exited ? `Chrome quit with ${exited}.` : "Chrome never opened its debugging port.",
+    stderr.trim() ? `Chrome said:\n${stderr.trim()}` : "",
+    `Executable: ${CHROME}`,
+  ].filter(Boolean).join("\n");
+  throw new Error(`Timed out waiting for Chrome remote debugging.\n${detail}`);
 }
 
 const buildExtractorSource = (CW, CH) => String.raw`
