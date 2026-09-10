@@ -27,7 +27,7 @@ license: MIT
 - ✅ 长滚动报告——会自动按语义块分页。
 - ❌ 用户想**从零新做**一套幻灯片 → 那是做 deck 的 skill 的活。
 - ❌ 用户想要**每页一张 AI 出图**的图片式 PPT → 用图片 deck 类 skill。
-- ❌ 输入是 PDF → 用 `pdf-to-pptx`。
+- ❌ 输入是 PDF → 用 `pdf-to-pptx` skill。
 
 ## 用法
 

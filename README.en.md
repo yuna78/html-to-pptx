@@ -204,3 +204,5 @@ Contributions welcome — see [`CONTRIBUTING.md`](./CONTRIBUTING.md).
   · [python-pptx](https://python-pptx.readthedocs.io/) (MIT) · [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/) (MIT)
 
 Released under the [MIT License](./LICENSE); third-party notices in [`NOTICE`](./NOTICE).
+
+> Sister project: [**pdf-to-pptx**](https://github.com/yuna78/pdf-to-pptx) — for when all you have is a PDF.

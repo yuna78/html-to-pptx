@@ -190,3 +190,5 @@ bash setup.sh                                   # 建 venv + 依赖自检
   · [python-pptx](https://python-pptx.readthedocs.io/)（MIT）· [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/)（MIT）
 
 本项目基于 [MIT 许可证](./LICENSE) 发布，第三方声明见 [`NOTICE`](./NOTICE)。
+
+> 姊妹项目：[**pdf-to-pptx**](https://github.com/yuna78/pdf-to-pptx) —— 只剩 PDF 的时候用那个。
