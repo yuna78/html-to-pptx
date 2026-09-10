@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>示例报告 · 可编辑 PPTX 演示</title>
+<style>
+  body { margin: 0; background: #eef1f6; font-family: "PingFang SC", "Microsoft YaHei", Inter, Arial, sans-serif; }
+  .slide {
+    width: 1280px; height: 720px; box-sizing: border-box;
+    background: #ffffff; color: #10233f; position: relative; overflow: hidden;
+    margin: 0 auto 24px;
+  }
+  .bar { height: 84px; background: linear-gradient(90deg, #123a6b, #2f7fd4); display: flex;
+         align-items: center; padding: 0 56px; color: #fff; }
+  .bar h1 { margin: 0; font-size: 34px; letter-spacing: .5px; }
+  .bar .tag { margin-left: auto; font-size: 16px; opacity: .9; }
+  .body { padding: 40px 56px 0; }
+  .kpis { display: flex; gap: 20px; }
+  .kpi { flex: 1; border: 2px solid #d7e3f4; border-radius: 12px; padding: 22px 24px; background: #f8fbff; }
+  .kpi .label { font-size: 16px; color: #5b7699; }
+  .kpi .value { font-size: 40px; font-weight: 800; color: #123a6b; margin: 8px 0 4px; }
+  .kpi .delta { font-size: 15px; font-weight: 700; }
+  .up { color: #1a8a5a; } .down { color: #c8442f; }
+  .grid { display: flex; gap: 26px; margin-top: 30px; }
+  table { border-collapse: collapse; width: 560px; }
+  th, td { border-bottom: 1px solid #e2e8f2; padding: 9px 12px; font-size: 17px; text-align: left; }
+  th { background: #f1f5fb; color: #123a6b; font-weight: 700; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .chart-title { font-size: 18px; font-weight: 700; margin: 0 0 10px; }
+  .note { position: absolute; left: 56px; bottom: 34px; font-size: 14px; color: #7086a3; }
+  .note::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+                  background: #2f7fd4; margin-right: 8px; vertical-align: middle; }
+  /* cover */
+  .cover { background: linear-gradient(135deg, #0d2a4f, #1f5fa8 60%, #2f7fd4); color: #fff; }
+  .cover .wrap { padding: 210px 76px 0; }
+  .cover h1 { font-size: 66px; margin: 0 0 18px; letter-spacing: 1px; }
+  .cover p { font-size: 24px; margin: 0; opacity: .92; }
+  .cover .rule { width: 120px; height: 6px; background: #7fc4ff; margin: 34px 0; border-radius: 3px; }
+  .cover .meta { position: absolute; left: 76px; bottom: 56px; font-size: 17px; opacity: .85; }
+</style>
+</head>
+<body>
+
+<section class="slide cover">
+  <div class="wrap">
+    <h1>2026 年度业务回顾</h1>
+    <div class="rule"></div>
+    <p>从一份 HTML 报告，到一份可以继续改的 PowerPoint</p>
+  </div>
+  <div class="meta">示例数据 · 由 html-to-pptx 转换</div>
+</section>
+
+<section class="slide">
+  <div class="bar"><h1>核心指标与区域表现</h1><span class="tag">2026 · 全年</span></div>
+  <div class="body">
+    <div class="kpis">
+      <div class="kpi"><div class="label">全年销售额</div><div class="value">¥ 4.82 亿</div><div class="delta up">同比 +18.4%</div></div>
+      <div class="kpi"><div class="label">预算达成率</div><div class="value">106.3%</div><div class="delta up">超额 +6.3pp</div></div>
+      <div class="kpi"><div class="label">人均产出</div><div class="value">¥ 312 万</div><div class="delta down">同比 −2.1%</div></div>
+    </div>
+
+    <div class="grid">
+      <table>
+        <thead><tr><th>区域</th><th class="num">销售额（万元）</th><th class="num">同比</th></tr></thead>
+        <tbody>
+          <tr><td>华东</td><td class="num">18,420</td><td class="num">+22.6%</td></tr>
+          <tr><td>华南</td><td class="num">12,980</td><td class="num">+15.1%</td></tr>
+          <tr><td>华北</td><td class="num">9,340</td><td class="num">+9.8%</td></tr>
+          <tr><td>西南</td><td class="num">7,460</td><td class="num">−3.2%</td></tr>
+        </tbody>
+      </table>
+
+      <div>
+        <p class="chart-title">分季度销售额（万元）</p>
+        <svg width="560" height="230" viewBox="0 0 560 230">
+          <line x1="46" y1="196" x2="546" y2="196" stroke="#c9d6e8" stroke-width="2"/>
+          <line x1="46" y1="20" x2="46" y2="196" stroke="#c9d6e8" stroke-width="2"/>
+          <rect x="80"  y="120" width="72" height="76"  fill="#2f7fd4"/>
+          <rect x="192" y="92"  width="72" height="104" fill="#2f7fd4"/>
+          <rect x="304" y="64"  width="72" height="132" fill="#2f7fd4"/>
+          <rect x="416" y="34"  width="72" height="162" fill="#123a6b"/>
+          <text x="116" y="214" font-size="15" fill="#5b7699" text-anchor="middle">Q1</text>
+          <text x="228" y="214" font-size="15" fill="#5b7699" text-anchor="middle">Q2</text>
+          <text x="340" y="214" font-size="15" fill="#5b7699" text-anchor="middle">Q3</text>
+          <text x="452" y="214" font-size="15" fill="#5b7699" text-anchor="middle">Q4</text>
+          <text x="116" y="110" font-size="15" fill="#123a6b" text-anchor="middle">9,820</text>
+          <text x="228" y="82"  font-size="15" fill="#123a6b" text-anchor="middle">11,640</text>
+          <text x="340" y="54"  font-size="15" fill="#123a6b" text-anchor="middle">13,100</text>
+          <text x="452" y="24"  font-size="15" fill="#123a6b" text-anchor="middle">14,640</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="note">转换后每个数字、每根柱子、每条表格线都是 PowerPoint 原生形状，可直接改。</div>
+</section>
+
+</body>
+</html>

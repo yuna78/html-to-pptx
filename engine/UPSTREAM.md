@@ -30,6 +30,13 @@ Each is marked `[fork patch]` in the source so the fork can be rebased later.
    match) and can be forced with `--canvas WxH`; the PPTX slide size follows the generated
    SVG viewBox.
 
+4. **Text is never re-spaced** — `html_dom_to_editable_svg.js`
+   `wrapText()` used to re-tokenise a string and re-join it with a spacing heuristic,
+   which inserted spaces that were not in the source (`18,420` → `18, 420`, `−3.2%` →
+   `− 3.2%`). The slide still looked right, but the text could no longer be found by
+   search. Wrapping now works on atoms that carry the original whitespace, so a line
+   break can only replace existing whitespace or fall between CJK characters.
+
 ## Updating from upstream
 
 Re-clone upstream → diff against the `[fork patch]` markers listed above → re-apply each

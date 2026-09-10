@@ -84,3 +84,27 @@ def test_wide_canvas_is_detected(tmp_path):
     assert presentation.slide_width == 1600 * 9525
     assert presentation.slide_height == 900 * 9525
     assert "Wide" in _shape_text(output)
+
+
+@requires_engine
+def test_text_is_not_respaced(tmp_path):
+    """Numbers and punctuation must survive verbatim — a slide that looks right but whose
+    text cannot be searched is worse than an obviously broken one."""
+    deck = tmp_path / "numbers.html"
+    deck.write_text(
+        "<!doctype html><html><head><meta charset='utf-8'><style>"
+        ".slide{width:1280px;height:720px;background:#fff;font-size:24px;padding:40px}"
+        "</style></head><body><section class='slide'>"
+        "<div>18,420</div><div>\u22123.2%</div><div>A/B (2026) v1.4</div>"
+        "<div>\u5168\u5e74 18,420 \u4e07\u5143</div>"
+        "</section></body></html>",
+        encoding="utf-8",
+    )
+    output = tmp_path / "numbers.pptx"
+    _convert(deck, output)
+
+    texts = _shape_text(output)
+    assert "18,420" in texts
+    assert "\u22123.2%" in texts
+    assert "A/B (2026) v1.4" in texts
+    assert "\u5168\u5e74 18,420 \u4e07\u5143" in texts

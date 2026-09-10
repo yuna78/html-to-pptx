@@ -404,25 +404,29 @@ const buildExtractorSource = (CW, CH) => String.raw`
     return true;
   }
 
+  // [fork patch] Wrap without ever rewriting the text. The previous version re-tokenised
+  // and re-joined with a spacing heuristic, which silently inserted spaces that were not
+  // in the source ("18,420" -> "18, 420", "-3.2%" -> "- 3.2%"): the slide looks right and
+  // the text can no longer be found by search. Atoms below carry the original whitespace,
+  // and a line break can only ever replace whitespace or fall between CJK characters.
   function wrapText(ctx, text, maxWidth) {
     const hard = String(text).split(/\n+/).map((s) => s.trim()).filter(Boolean);
     const lines = [];
     for (const part of hard) {
-      const tokens = part.match(/[A-Za-z0-9_./:+#-]+|[\u4e00-\u9fff]|\S/g) || [];
+      const atoms = part.match(/\s+|[\u4e00-\u9fff]|[^\s\u4e00-\u9fff]+/g) || [];
       let line = "";
-      for (const tok of tokens) {
-        const needsSpace = line
-          && /^[A-Za-z0-9_./:+#-]+$/.test(tok)
-          && !/[\[(（]$/.test(line);
-        const trial = needsSpace ? line + " " + tok : line + tok;
+      for (const atom of atoms) {
+        const isSpace = /^\s+$/.test(atom);
+        if (!line && isSpace) continue;            // never start a line with whitespace
+        const trial = line + atom;
         if (line && ctx.measureText(trial).width > maxWidth) {
-          lines.push(line);
-          line = tok;
+          lines.push(line.replace(/\s+$/, ""));
+          line = isSpace ? "" : atom;
         } else {
           line = trial;
         }
       }
-      if (line) lines.push(line);
+      if (line.trim()) lines.push(line.replace(/\s+$/, ""));
     }
     return lines.length ? lines : [text];
   }

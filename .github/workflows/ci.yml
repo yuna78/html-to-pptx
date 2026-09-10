@@ -42,4 +42,5 @@ jobs:
         run: |
           python convert.py examples/sample-deck.html -o /tmp/sample-deck.pptx
           python convert.py examples/sample-report.html -o /tmp/sample-report.pptx
+          python convert.py examples/showcase-deck.html -o /tmp/showcase-deck.pptx
           ls -l /tmp/*.pptx

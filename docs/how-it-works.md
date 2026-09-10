@@ -1,131 +1,98 @@
-# How it works / 工作原理
+# 工作原理
 
-This document explains the parts that are not obvious from the code: why a
-pre-conversion transform exists at all, and which HTML shapes silently lose content
-without it.
+> English version: [`how-it-works.en.md`](./how-it-works.en.md)
 
-本文解释代码里不显然的部分：为什么需要一层「转换前变换」，以及哪些 HTML 形状在没有它的时候
-会**悄悄丢内容**。
+这份文档讲代码里看不出来的部分：为什么需要一层「转换前变换」，以及哪些 HTML 形状
+在没有它的时候会**悄悄丢内容**。
 
-## The pipeline / 管线
+## 管线
 
-```
-source.html
-   │  prepare.py                    (pure Python, BeautifulSoup — no browser)
-   ▼
-prepared.html                       throwaway copy; your original file is never modified
-   │  engine/html_dom_to_editable_svg.js
-   │  ─ launches headless Chrome with zero network access
-   │  ─ shows one page at a time and reads the computed layout
-   ▼
-one SVG per page                    <rect>, <text>, <path> primitives
-   │  engine/svg_to_pptx/
-   ▼
-output.pptx                         native DrawingML shapes, editable in PowerPoint
+```mermaid
+flowchart TB
+  A["source.html"] -->|"prepare.py<br/>纯 Python，不开浏览器"| B["prepared.html<br/>一次性副本，原文件不动"]
+  B -->|"engine/html_dom_to_editable_svg.js<br/>无头 Chrome · 零出网"| C["每页一个 SVG<br/>rect / text / path 图元"]
+  C -->|"engine/svg_to_pptx/"| D["output.pptx<br/>PowerPoint 里可编辑的原生形状"]
 ```
 
-Chrome is used **only as a layout engine**. Nothing is rasterised: the extractor asks the
-DOM where each box, line and text run ended up, and writes a primitive for it.
+Chrome **只当排版引擎**用。全程不截图：提取器问 DOM 每个盒子、每条线、每段文字最终落在哪，
+然后为它写一个图元。
 
-Chrome **只当排版引擎**用。全程不截图：提取器问 DOM 每个盒子/线条/文字最终落在哪，然后为它写一个图元。
+## 提取器只有一条规则
 
-## The extractor's one rule / 提取器的唯一规则
-
-`engine/html_dom_to_editable_svg.js` walks the DOM with a hit-and-return rule:
+`engine/html_dom_to_editable_svg.js` 遍历 DOM 时是「命中即返回」：
 
 ```js
-if (shouldEmitText(el)) { emit(text of el); return; }   // stops descending here
+if (shouldEmitText(el)) { emit(el 的文字); return; }   // 到此为止，不再下钻
 for (const child of el.children) walk(child);
 ```
 
-`shouldEmitText` takes `innerText` — the **whole subtree** — for non-`DIV` text tags
-(`TD`, `TH`, `LI`, `P`, `SPAN`, `B` …), but only the **direct text nodes** for a `DIV`.
-That single asymmetry produces every content-loss case below.
+`shouldEmitText` 对**非 DIV** 的文本标签（`TD`/`TH`/`LI`/`P`/`SPAN`/`B`…）取 `innerText`
+——**整棵子树**；对 `DIV` 只取**直接文本节点**。所有「内容被吃掉」的情况，都源于这一处不对称。
 
-`shouldEmitText` 对**非 DIV** 的文本标签取 `innerText`（**整棵子树**），对 `DIV` 只取
-**直接文本节点**。所有「内容被吃掉」的情况都源于这一处不对称。
+### 情况一 · 一格里塞了多行
 
-### Case 1 — a table cell with several lines / 多行表格单元格
+`<td>` 里有 `<ul>`、`<ol>` 或多个块级子元素时，整格会并成一段文字，行边界全丢。
 
-`<td>` containing `<ul>`, `<ol>` or several block children collapses into a single run:
-the line boundaries are gone.
+**修法**：把整个表格家族（`table`/`tr`/`td`…）换成带等价 `display: table-*` 的 `<div>`。
+布局分毫不变（含自动列宽），但遍历走的是 DIV 分支，会继续下钻，于是每一行各自出一个文字形状。
 
-**Fix**: retag the whole table family (`table`, `tr`, `td`, …) as `<div>`s carrying the
-equivalent `display: table-*` value. The layout — including automatic column widths — is
-identical, but the walk now takes the `DIV` branch and keeps descending, so each line emits
-its own text shape.
+两个配套细节让这件事是安全的：
 
-Two details make that safe:
+- **CSS 跟着改名走**。`td.wide{width:120px}` 在单元格变成 `<div>` 之后就不匹配了。
+  因此凡是选择器里出现表格标签的规则，都复制一份、把 `td` 换成 `[data-was="td"]`，列宽才保得住。
+  **不做这步就是「内容对、版式全乱」**——这一步是「能吃别人写的 HTML」的关键。
+- **`colspan` 展开**。`display: table` 不认 `colspan`，合并单元格的底色只会铺一列；
+  用同 class 的空单元格补齐，底色和边框才连成一片。
 
-- **CSS carry-over.** `td.wide{width:120px}` stops matching once the cell is a `<div>`.
-  Every rule whose selector mentions a table tag is duplicated with `td` rewritten as
-  `[data-was="td"]`, so column widths survive. Without this step the content is right and
-  the layout is wrong — this is the step that lets the converter eat HTML it did not write.
-- **`colspan` expansion.** `display: table` ignores `colspan`, so a merged cell would only
-  paint one column; it is padded with empty cells that carry the same classes.
+**只动密排表**：一格里有列表、有 `<br>`、或有 ≥2 个块级子元素，才算密排。
+一格一个值的普通数据表完全不碰，所以这条不可能把简单表格改坏。
 
-Only **dense** tables are touched — a table is dense when a cell holds a list, a `<br>`,
-or two or more block children. A plain one-value-per-cell table is left exactly as it is,
-so simple data tables cannot regress.
+### 情况二 · `<div>文字 <b>加粗</b> 还有文字</div>`
 
-**只动密排表**：一格一个值的表完全不碰，零回归风险。
+DIV 有直接文本 → 遍历吐出这段文字就返回，**`<b>` 里的字整段消失**。
 
-### Case 2 — `<div>text <b>bold</b> more text</div>`
+**修法**：把这个元素压成纯文本。代价是这一处的行内加粗变成统一字重；
+但对比「整句话不见了」，这是净赚。**只有内联子元素、没有裸文本**的 DIV 不动
+——那种引擎会正常下钻，加粗保得住。
 
-The `DIV` has direct text, so the walk emits that text and returns — **the text inside
-`<b>` disappears entirely**.
+### 情况三 · `<br>`
 
-**Fix**: flatten the element to plain text. The cost is that inline bolding inside that
-one element becomes a single weight; the alternative was losing the sentence. `DIV`s with
-*only* inline children and no bare text are left alone — those descend fine and keep their
-bold.
+文字清洗会把连续空白压成一个空格，于是 `<br>` 分隔的多行黏成一行。
 
-### Case 3 — `<br>`
+**修法**：在每个 `<br>` 处拆成块级行 `<div>`。视觉等价（`<br>` 本来就是换行），
+每行随后各自出形状。
 
-Whitespace is collapsed during text cleanup, so lines separated by `<br>` are glued into
-one run.
+### 情况四 · 根本不在 DOM 里的东西
 
-**Fix**: split at each `<br>` into block-level line `<div>`s. Visually equivalent — a
-`<br>` *is* a line break — and each line now emits its own shape.
+有三类装饰只活在 CSS 层，任何 DOM 遍历都看不见。它们由一段注入的脚本在同一个无头 Chrome 里修好
+（那里才拿得到 computed style）：
 
-### Case 4 — things that are not in the DOM at all / 根本不在 DOM 里的东西
-
-Three decorations exist only in the CSS layer, so no DOM walk can see them. They are fixed
-in a small script that runs inside the same headless Chrome, where computed styles are
-available:
-
-| Decoration | Fix |
+| 装饰 | 修法 |
 |---|---|
-| CSS `linear-gradient` / `radial-gradient` backgrounds | replaced by a representative solid colour from the gradient (a white-on-dark gradient header would otherwise vanish completely) |
-| `::before` / `::after` dots, badges, glyphs | materialised into real `<span>`s that copy the pseudo element's computed box, then the pseudo is suppressed |
-| `<ol>` numbers from CSS counters | written into the `<li>` as real text |
+| CSS `linear-gradient` / `radial-gradient` 背景 | 换成渐变里的一个代表纯色（否则白字深底的标题栏会整块消失） |
+| `::before` / `::after` 的圆点、角标、字形 | 物化成真实 `<span>`，复制伪元素的 computed 盒模型，再把伪元素隐藏 |
+| CSS 计数器生成的 `<ol>` 序号 | 作为真实文字写进 `<li>` |
 
-When a pseudo element is materialised, the host element's bare text is wrapped in a span
-too — otherwise the host would emit its own text and return (case 2 again) and the freshly
-injected decoration would never be visited.
+物化伪元素时，宿主元素的裸文本也会被包进 span——否则宿主会吐出自己的文字就返回
+（又回到情况二），刚注入的装饰永远轮不到被访问。
 
-## Pagination / 分页
+## 分页
 
-- **Slide-shaped input** (`.deck-slide` / `.slide` / `.cover`): each page is tagged and
-  exported as one slide.
-- **Scroll-shaped input**: top-level blocks are grouped into fixed-canvas pages. Charts and
-  sections get a page each, small blocks (header, KPI strip) accumulate onto the first, and
-  a table longer than one page is split by rows with its heading and `<thead>` repeated.
-  Totals in `<tfoot>` and anything after the table stay on the last page. **No row is ever
-  dropped** — the test suite asserts it.
+- **幻灯片式输入**（`.deck-slide` / `.slide` / `.cover`）：逐页打标记，一页一张幻灯片。
+- **滚动式输入**：顶层块归组成固定画布的页。图表和 section 各占一页，小块（页头、KPI 条）
+  累积到首页；超过一页的表格按行拆开，标题与 `<thead>` 每页重复，`<tfoot>` 合计与表后内容
+  只留末页。**一行都不会丢**——测试里有断言。
 
-## Canvas size / 画布尺寸
+## 画布尺寸
 
-Before extraction the first page is measured and Chrome is re-sized to match, and the PPTX
-slide size follows the generated SVG's viewBox. A deck declaring 1600×900 exports at
-1600×900. `--canvas WxH` overrides the measurement when a deck's own CSS is misleading.
+提取前先实测首页尺寸并把 Chrome 调整到同样大小，PPTX 的幻灯片尺寸再跟着生成的 SVG viewBox 走。
+声明 1600×900 的 deck 就按 1600×900 导出。`--canvas WxH` 可以在 deck 自身 CSS 有误导时强制覆盖。
 
-早期版本把画布硬编码成 1280×720，其它尺寸的 deck 直接转不出来；现在改成实测 + 可覆盖。
+早期版本把画布写死成 1280×720，其它尺寸的 deck 直接转不出来。
 
-## Zero-network rendering / 零出网渲染
+## 零出网渲染
 
-Chrome is launched with `--host-resolver-rules=MAP * ~NOTFOUND`: every hostname fails to
-resolve. A deck cannot phone home, probe cloud metadata or exfiltrate a local file during
-conversion. The consequence is that **remote assets are not fetched** — inline your images,
-CSS and fonts. ECharts loaded from a CDN is swapped for the vendored bundle so charts still
-draw.
+Chrome 启动时带 `--host-resolver-rules=MAP * ~NOTFOUND`：任何域名都解析不了。
+转换过程中，页面无法回传数据、无法探测云元数据、也无法把读到的本地文件发出去。
+代价是**远程资源不会被加载**——图片、CSS、字体请内联。
+从 CDN 引的 ECharts 会被换成内置 bundle，图表照样画得出来。

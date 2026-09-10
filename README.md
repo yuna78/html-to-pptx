@@ -1,216 +1,192 @@
-# html-to-pptx
+<h1 align="center">html-to-pptx</h1>
 
-[![CI](https://github.com/yuna78/html-to-pptx/actions/workflows/ci.yml/badge.svg)](https://github.com/yuna78/html-to-pptx/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+<p align="center">
+  把 HTML 幻灯片，变成 <strong>真的能改</strong> 的 PowerPoint。<br>
+  每个字、每格表、每根柱子都是 PPT 原生形状，不是一张截图。
+</p>
 
-**Turn an HTML deck into a PowerPoint file you can actually edit.**
-**把 HTML 幻灯片转成真正可以编辑的 PowerPoint。**
+<p align="center">
+  <a href="https://github.com/yuna78/html-to-pptx/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/yuna78/html-to-pptx/ci.yml?branch=main&style=flat-square&label=CI&labelColor=1f2937"></a>
+  <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-3b82f6?style=flat-square&labelColor=1f2937"></a>
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white&labelColor=1f2937">
+  <img alt="Node" src="https://img.shields.io/badge/Node-22+-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white&labelColor=1f2937">
+  <img alt="Platform" src="https://img.shields.io/badge/macOS%20|%20Linux-supported-6b7280?style=flat-square&labelColor=1f2937">
+  <a href="./README.en.md"><img alt="English" src="https://img.shields.io/badge/docs-English-64748b?style=flat-square&labelColor=1f2937"></a>
+</p>
 
-Most "HTML → PPT" tools screenshot each page and drop the image on a slide. This one
-renders your page in a real headless Chrome, reads the resulting layout, and rebuilds it
-as **native DrawingML shapes**: every paragraph, table cell, colour block and chart
-bar is a normal PowerPoint object you can retype, recolour and move.
-
-大多数「HTML → PPT」工具是把每页截图贴进幻灯片。本项目用真实的无头 Chrome 渲染页面、读取布局，
-再重建成 **PPT 原生形状**：每段文字、每个表格单元格、每个色块、每根图表柱子，都是能改字、改色、
-挪位置的普通 PowerPoint 对象。
+<p align="center"><img src="./examples/figure-editable.png" alt="HTML 输入与 PPTX 输出对照：蓝框标出每一个可编辑的原生形状" width="860"></p>
 
 ```bash
-bin/html-to-pptx report.html      # → report.pptx, right next to report.html
+bin/html-to-pptx report.html      # 产物 report.pptx 就在 report.html 旁边
 ```
-
-- Works with **any canvas size** — 1280×720, 1600×900, A4-ish, whatever your deck declares.
-- Handles **long scrolling reports** too: they are paginated on block boundaries, tables
-  split by rows with the header repeated.
-- **Zero network** while rendering: the browser resolves no hostnames, so a deck can never
-  phone home or leak local files during conversion.
-- No cloud service, no API key, nothing uploaded. Everything runs on your machine.
 
 ---
 
-## Table of contents
+## 为什么要有它
 
-[Install](#install) · [Prerequisites](#prerequisites--环境依赖) · [Usage](#usage--用法) ·
-[Options](#options--参数) · [How it works](#how-it-works--工作原理) ·
-[Limitations](#limitations--已知限制) · [Troubleshooting](#troubleshooting--排查) ·
-[Development](#development--开发) · [Credits](#credits--致谢)
+「HTML 转 PPT」的常见做法是把每页截成图片贴进幻灯片——**看着像 PPT，改不动**。
+客户要你把标题里的一个数字改掉，你只能回去改 HTML 再导一次。
 
----
+这个工具用无头 Chrome 真实渲染你的页面，读取排版结果，再重建成 **PowerPoint 原生形状**。
+上图下半部分的每一个蓝框，都是一个能双击改字、能换颜色、能拖动的普通 PPT 对象。
 
-## Install
+|  | 截图式导出 | html-to-pptx |
+|---|---|---|
+| 改一个数字 | 回去改 HTML，重导 | 双击，改 |
+| 换品牌色 | 重导 | 选中形状，换填充 |
+| 复制其中一张图表 | 只能连页面一起截 | 单独复制到别的 deck |
+| 文字能搜索 / 能复制 | ❌ | ✅ |
+| 交给不会写代码的同事 | 他改不了 | 他会用 PPT 就行 |
 
-### As a Claude Code / Claude Desktop skill
+其它几件顺手做掉的事：
 
-Clone into your skills directory; the folder name becomes the skill name:
+- **画布尺寸随你**——1280×720、1600×900、任何自定义尺寸，自动实测，不写死。
+- **长报告也能转**——没有分页结构的滚动式报告会按语义块自动切页，超长表格按行拆页并重复表头，**一行都不丢**。
+- **渲染时零出网**——浏览器解析不了任何域名，转换过程中页面无法回传数据或外泄本地文件。
+- 全程本地跑，不上传、不需要 API key、不依赖任何云服务。
 
-```bash
-git clone https://github.com/yuna78/html-to-pptx.git ~/.claude/skills/html-to-pptx
-~/.claude/skills/html-to-pptx/bin/html-to-pptx --doctor
-```
-
-Then just ask: *"convert this HTML report to an editable PPT"* / *「把这个 HTML 转成可编辑的 PPT」*.
-
-### As a plain command-line tool
+## 快速开始
 
 ```bash
 git clone https://github.com/yuna78/html-to-pptx.git
 cd html-to-pptx
-./bin/html-to-pptx examples/sample-deck.html -o /tmp/sample.pptx
+./bin/html-to-pptx examples/showcase-deck.html      # 生成 examples/showcase-deck.pptx
 ```
 
-The first run creates a local `.venv` and installs two Python packages. There is no
-separate setup step, and nothing is installed system-wide.
+第一次运行会自动建好本地 `.venv` 并装两个 Python 包，不需要单独的安装步骤，也不往系统里装东西。
 
-## Prerequisites / 环境依赖
+**作为 Claude Code / Claude Desktop 的 skill 用**（clone 到 skills 目录，文件夹名就是 skill 名）：
 
-| Requirement | Why it is needed | Install |
+```bash
+git clone https://github.com/yuna78/html-to-pptx.git ~/.claude/skills/html-to-pptx
+```
+
+之后直接说「把这个 HTML 报告转成可编辑的 PPT」就会触发。
+
+## 环境依赖
+
+| 依赖 | 干什么用 | 怎么装 |
 |---|---|---|
-| **Node.js ≥ 22** | runs the DOM→SVG extractor (uses only Node built-ins, no `npm install`) | `brew install node` · `apt install nodejs` |
-| **Google Chrome or Chromium** | used headlessly as the layout engine | [google.com/chrome](https://www.google.com/chrome/) · `apt install chromium-browser` |
-| **Python ≥ 3.11** | `python-pptx` + `beautifulsoup4`, installed into a local venv on first run | preinstalled on macOS; `apt install python3-venv` |
-| **CJK fonts** (Chinese/Japanese/Korean decks) | text and chart labels | preinstalled on macOS; `apt install fonts-noto-cjk` |
+| **Node.js ≥ 22** | 跑 DOM→SVG 提取器（只用内置模块，无需 `npm install`） | `brew install node` · `apt install nodejs` |
+| **Google Chrome / Chromium** | 当排版引擎用，无头运行 | [google.com/chrome](https://www.google.com/chrome/) · `apt install chromium-browser` |
+| **Python ≥ 3.11** | `python-pptx` + `beautifulsoup4`，首次运行自动装进本地 venv | macOS 自带 · `apt install python3-venv` |
+| **中文字体** | 中文正文与图表标签 | macOS 自带 · `apt install fonts-noto-cjk` |
 
-Check them all with one command:
+一条命令自检，缺什么会直接给出安装命令：
 
 ```bash
 bin/html-to-pptx --doctor
 ```
 
-It prints a ✓/✗ line per prerequisite plus the exact command to fix anything missing.
-
-## Usage / 用法
+## 用法
 
 ```bash
-# Output goes next to the input, same base name
+# 默认：产物与来源 HTML 同目录同名
 bin/html-to-pptx path/to/report.html
 
-# Explicit output path (a directory works too)
+# 指定输出文件或目录
 bin/html-to-pptx path/to/report.html -o path/to/deck.pptx
 
-# Force the canvas size instead of measuring it
+# 画布尺寸默认自动实测，也可以强制指定
 bin/html-to-pptx deck.html --canvas 1600x900
 
-# Feed the HTML to the engine untouched
+# 变换帮了倒忙时的逃生口
 bin/html-to-pptx deck.html --no-prepare
 ```
 
-**Where the file lands / 产物位置**: without `-o`, the `.pptx` is written to the *same
-directory as the source HTML*, with the same base name — so the deck and its export stay
-together. 默认 `.pptx` 与来源 HTML **同目录同名**。
+| 参数 | 作用 |
+|---|---|
+| `-o, --output PATH` | 输出 `.pptx` 文件或目录（默认与输入同目录同名） |
+| `--canvas auto\|WxH` | 画布尺寸（CSS px）；`auto` 实测首页，默认值 |
+| `--no-prepare` | 跳过全部转换前变换，把 HTML 原样交给引擎 |
+| `--no-reshape` | 保留 prepare，但不做密排表格 / 富文本重整 |
+| `--no-pseudo` | 不物化 `::before` / `::after` 装饰 |
+| `--keep-prepared` | 把中间 HTML 留在输入旁边，便于排查 |
+| `--chrome PATH` | 指定 Chrome/Chromium 可执行文件 |
+| `--doctor` | 只做环境自检 |
+| `--quiet` | 少打点日志 |
 
-### What your HTML should look like / 输入契约
+### 输入 HTML 长什么样最好
 
-The converter is happiest with a **fixed-canvas deck**: one element per page, with an
-explicit pixel width and height.
+**固定画布**：一页一个元素，宽高写死。
 
 ```html
-<section class="slide" style="width:1280px;height:720px">…page 1…</section>
-<section class="slide" style="width:1280px;height:720px">…page 2…</section>
+<section class="slide" style="width:1280px;height:720px">…第 1 页…</section>
+<section class="slide" style="width:1280px;height:720px">…第 2 页…</section>
 ```
 
-Recognised page classes: `.deck-slide`, `.slide`, `.cover`. If none is present the document
-is treated as a scrolling report and paginated automatically. Inline your CSS, images and
-fonts — the render has no network access, so remote assets simply will not load.
+识别的分页类名：`.deck-slide` / `.slide` / `.cover`。都没有，就按滚动式报告自动分页。
+CSS、图片、字体尽量内联——渲染时没有网络，远程资源不会被加载。
 
-> Writing a new deck? Avoid `<table>` for pure layout. Semantically it is not tabular data,
-> and the converter has to work much harder to keep it intact.
+> 正在新写一套 deck？**别用 `<table>` 排版面**。语义上那不是表格数据，转换器要费很大劲才能保住它。
 
-## Options / 参数
+## 工作原理
 
-| Flag | Meaning |
+```mermaid
+flowchart LR
+  A["你的 HTML"] --> B["prepare<br/>切页 · 重整 · 图表离线"]
+  B --> C["无头 Chrome<br/>真实 CSS 排版"]
+  C --> D["可编辑 SVG 图元<br/>每页一个文件"]
+  D --> E["原生 DrawingML"]
+  E --> F["your.pptx<br/>每页一张幻灯片"]
+```
+
+关键在中间那步：提取器遍历渲染后的 DOM，为每个可见元素吐一个图元，而不是拍一张图——
+这就是产物可编辑的原因。有几种 HTML 形状会在这趟遍历里丢内容（多行表格单元格、
+`<div>` 里的 `<b>`、`<br>` 换行、CSS 计数器序号、渐变、伪元素），`prepare.py` 会先把它们改掉。
+每种情况对应引擎里的哪条规则，见 [`docs/how-it-works.md`](./docs/how-it-works.md)。
+
+## 已知限制
+
+- **文字按元素整体定位**：一段跨多行折行的正文会被当成一个文本形状放在元素框的位置，
+  长段落可能与浏览器里略有出入。幻灯片式的短句不受影响。
+- **密排表格重整时不展开 `rowspan`**：会留白，但不会错位。
+- **文字与 `<b>` 混排的 `<div>` 里，行内加粗会变成统一字重**——代价是保住这句话不消失，原委见 how-it-works。
+- **动画、转场、视频、iframe 不会保留**：幻灯片是静态页。
+- **远程资源不会被拉取**：请内联。
+- **`<col width>` 定义的列宽不会跟过来**：把宽度写到单元格上。
+
+## 排查
+
+| 现象 | 怎么办 |
 |---|---|
-| `-o, --output PATH` | output `.pptx` file or directory (default: beside the input) |
-| `--canvas auto\|WxH` | slide size in CSS px; `auto` measures the first page (default) |
-| `--no-prepare` | skip all pre-conversion transforms |
-| `--no-reshape` | keep prepare, skip dense-table / rich-text reshaping |
-| `--no-pseudo` | do not materialise `::before` / `::after` decorations |
-| `--keep-prepared` | write the intermediate HTML next to the input for inspection |
-| `--chrome PATH` | Chrome/Chromium executable (default: auto-discovered) |
-| `--doctor` | check prerequisites and exit |
-| `--quiet` | less output |
+| `node: command not found` / 提示没有全局 WebSocket | 装 Node.js ≥ 22 |
+| 找不到 Chrome | 装 Chrome/Chromium，或 `--chrome <路径>` |
+| `ModuleNotFoundError: pptx` / `bs4` | 用 `bin/html-to-pptx`（会自建 venv），或跑 `bash setup.sh` |
+| 只出了 1 页 | 没识别到分页结构，检查上面的分页类名 |
+| 一格里的多行并成一段 / `<b>` 里的字不见了 | 重整被 `--no-reshape` 关了，或该表没被判为密排 |
+| 列宽走形 | 该 deck 用 `<col width>` 定列宽，改成写在单元格上 |
+| 图表变黑 | 图表填色来自渲染时被剥离的 CSS 变量——通常已被补丁覆盖，请提 issue |
+| 中文变方框 | 装中文字体 |
+| 转换后版式变差 | 依次试 `--no-reshape`、`--no-prepare`，并带上输入提 issue |
 
-## How it works / 工作原理
-
-```
-your.html
-   │  prepare.py        pagination · canvas sizing · reshaping · offline charts
-   ▼
-prepared.html
-   │  headless Chrome   real CSS layout, computed styles, rendered charts
-   ▼
-editable SVG            rects, text runs, paths — one file per page
-   │  svg_to_pptx
-   ▼
-your.pptx               native DrawingML shapes, one slide per page
-```
-
-The interesting part is the middle: the extractor walks the rendered DOM and emits a
-primitive per visual element rather than a picture, which is what makes the result
-editable. A handful of HTML shapes lose content in that walk, and `prepare.py` rewrites
-them first — multi-line table cells, `<b>` inside a text-bearing `<div>`, `<br>` runs,
-CSS-counter list markers, gradients and pseudo elements.
-The full explanation, with the exact rule that causes each case, is in
-[`docs/how-it-works.md`](./docs/how-it-works.md).
-
-## Limitations / 已知限制
-
-- **Text wrapping is per element.** A paragraph that wraps across several lines is emitted
-  as one text shape positioned at the element's box; long prose can therefore sit slightly
-  differently than in the browser. Slide-style content (short lines) is unaffected.
-- **`rowspan` is not expanded** when a dense table is reshaped — it leaves a gap rather
-  than a misalignment.
-- **Inline bold inside a mixed text+`<b>` `<div>` becomes a single weight.** The
-  alternative was losing that text entirely; see `docs/how-it-works.md`.
-- **Animations, transitions, video and iframes** do not survive — a slide is a static page.
-- **Remote assets are not fetched.** Inline them, or they will be missing.
-- **`<col width>` column sizing** is not carried across the table reshape; use cell-level
-  widths.
-
-## Troubleshooting / 排查
-
-| Symptom | What to do |
-|---|---|
-| `node: command not found` / `no global WebSocket` | install Node.js ≥ 22 |
-| Chrome not found | install Chrome/Chromium, or pass `--chrome <path>` |
-| `ModuleNotFoundError: pptx` / `bs4` | use `bin/html-to-pptx` (it builds the venv), or run `bash setup.sh` |
-| Only one slide in the output | no page structure was recognised; check the page class names above |
-| A cell's lines are glued together, or `<b>` text is missing | reshaping is off (`--no-reshape`) or that table was not classified as dense |
-| Column widths drift | the deck sizes columns via `<col width>`; move the width onto the cells |
-| Chart renders black | chart fills come from CSS variables removed at render time — normally patched; please open an issue |
-| Chinese text shows as boxes | install a CJK font |
-| Layout looks worse after conversion | try `--no-reshape`, then `--no-prepare`, and open an issue with the input |
-
-## Development / 开发
+## 开发
 
 ```bash
-bash setup.sh                                   # venv + dependency check
-.venv/bin/pip install -r requirements-dev.txt   # adds pytest
-.venv/bin/python -m pytest tests -q             # unit tests + end-to-end smoke test
+bash setup.sh                                   # 建 venv + 依赖自检
+.venv/bin/pip install -r requirements-dev.txt   # 加上 pytest
+.venv/bin/python -m pytest tests -q             # 单元测试 + 端到端冒烟
 ```
 
-`tests/test_prepare.py` is pure Python and runs anywhere. `tests/test_smoke.py` converts
-real decks and is skipped automatically when Node or Chrome is unavailable.
+`tests/test_prepare.py` 是纯 Python，哪儿都能跑；`tests/test_smoke.py` 会真的转 deck，
+没有 Node / Chrome 时自动跳过。README 里的插图由 `examples/make-figure.py` 生成，可复现。
 
-Layout of the repo:
-
-| Path | What it is |
+| 路径 | 是什么 |
 |---|---|
-| `convert.py` | CLI: preflight checks, prepare, engine invocation |
-| `prepare.py` | pre-conversion DOM transforms (pagination, reshaping, controls) |
-| `engine/` | vendored HTML→SVG→PPTX engine (see `engine/UPSTREAM.md`) |
-| `bin/html-to-pptx` | one-command wrapper that bootstraps the venv |
-| `vendor/echarts.min.js` | offline ECharts bundle for zero-network chart rendering |
-| `examples/` | sample decks used by the smoke test |
+| `convert.py` | 命令行入口：环境自检 → prepare → 调引擎 |
+| `prepare.py` | 转换前的 DOM 变换（分页、重整、控件静态化） |
+| `engine/` | vendored 的 HTML→SVG→PPTX 引擎（见 `engine/UPSTREAM.md`） |
+| `bin/html-to-pptx` | 自举 venv 的一键包装脚本 |
+| `vendor/echarts.min.js` | 离线 ECharts，零出网也能出图 |
+| `examples/` | 冒烟测试与插图用的示例 deck |
 
-Contributions welcome — see [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+欢迎 PR，约定见 [`CONTRIBUTING.md`](./CONTRIBUTING.md)。
 
-## Credits / 致谢
+## 致谢与许可
 
-- Conversion engine: [`GX-Alex/html2pptx`](https://github.com/GX-Alex/html2pptx) (MIT),
-  vendored with local patches documented in [`engine/UPSTREAM.md`](./engine/UPSTREAM.md).
-- [Apache ECharts](https://echarts.apache.org/) (Apache-2.0) for offline chart rendering.
-- [Font Awesome Free](https://fontawesome.com/license/free) (CC BY 4.0) icon paths.
-- [python-pptx](https://python-pptx.readthedocs.io/) (MIT) and
-  [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/) (MIT).
+- 转换引擎：[`GX-Alex/html2pptx`](https://github.com/GX-Alex/html2pptx)（MIT），
+  vendored fork，本地补丁列在 [`engine/UPSTREAM.md`](./engine/UPSTREAM.md)。
+- [Apache ECharts](https://echarts.apache.org/)（Apache-2.0）· [Font Awesome Free](https://fontawesome.com/license/free)（CC BY 4.0）
+  · [python-pptx](https://python-pptx.readthedocs.io/)（MIT）· [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/)（MIT）
 
-Licensed under the [MIT License](./LICENSE). Third-party notices: [`NOTICE`](./NOTICE).
+本项目基于 [MIT 许可证](./LICENSE) 发布，第三方声明见 [`NOTICE`](./NOTICE)。
